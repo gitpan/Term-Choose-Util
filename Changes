@@ -1,5 +1,10 @@
 Revision history for Term::Choose::Util
 
 
+0.000_02   2014-03-16
+        - New functions: "print_hash" and "length_longest".
+        - Code refactoring.
+        - Improved documentation.
+
 0.000_01   2014-03-13
         - First developer release on CPAN.
