@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.000_02';
+our $VERSION = '0.000_03';
 use Exporter 'import';
 our @EXPORT_OK = qw( term_size print_hash util_readline insert_sep length_longest choose_a_number choose_a_subset
                      choose_multi choose_a_directory unicode_trim unicode_sprintf );
@@ -471,7 +471,7 @@ Term::Choose::Util - CLI related functions.
 
 =head1 VERSION
 
-Version 0.000_02
+Version 0.000_03
 
 =cut
 
@@ -500,8 +500,9 @@ Values in brackets are default values.
 With C<choose_a_directory> the user can browse through the directory tree (as far as the granted rights permit it) and
 choose a directory which is returned.
 
-The first argument is the starting point directory. The second and optional argument are the options (a reference to a
-hash). The options are:
+The first argument is the starting point directory.
+
+The second and optional argument is a reference to a hash. With this hash it can be set the different options:
 
 =over
 
@@ -511,7 +512,7 @@ C<layout>
 
 See C<layout> at L<Term::Choose/OPTIONS>
 
-Values: 0, [1], 2, 3.
+Values: C<0, [1], 2, 3>.
 
 =item
 
@@ -519,7 +520,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: C<0, [1]>.
 
 =item
 
@@ -527,7 +528,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: [0], 1, 2, 3, 4.
+Values: C<[0], 1, 2, 3, 4>.
 
 =back
 
@@ -540,7 +541,7 @@ Values: [0], 1, 2, 3, 4.
 
 This function lets you choose/compose a number (unsigned integer) which is returned.
 
-The fist argument - digits - is an integer and determines the range of the available numbers. For example setting the
+The fist argument - "digits" - is an integer and determines the range of the available numbers. For example setting the
 first argument to 6 would offer a range from 0 to 999999.
 
 The second and optional argument is a reference to a hash with these keys (options):
@@ -551,7 +552,7 @@ The second and optional argument is a reference to a hash with these keys (optio
 
 C<current>
 
-The current value. If set two prompt lines are displayed: one for the current number and one for the new number.
+The current value. If set two prompt lines are displayed - one for the current number and one for the new number.
 
 =item
 
@@ -559,7 +560,7 @@ C<name>
 
 Sets the name of the number seen in the prompt line.
 
-Default: empty string ("");
+Default: empty string (C<"">);
 
 =item
 
@@ -567,7 +568,7 @@ C<thsd_sep>
 
 Sets the thousands separator.
 
-Default: comma (",").
+Default: comma (C<,>).
 
 =item
 
@@ -575,7 +576,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: C<0, [1]>.
 
 =item
 
@@ -583,7 +584,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: [0], 1, 2, 3, 4.
+Values: C<[0], 1, 2, 3, 4>.
 
 =back
 
@@ -593,9 +594,9 @@ Values: [0], 1, 2, 3, 4.
 
 C<choose_a_subset> lets you choose a subset from a list.
 
-As the first argument it is required a reference to an array which provides the available list.
+As a first argument it is required a reference to an array which provides the available list.
 
-The optional second argument is a hash reference. The following option is available:
+The optional second argument is a hash reference. The following options are available:
 
 =over
 
@@ -603,7 +604,7 @@ The optional second argument is a hash reference. The following option is availa
 
 C<current>
 
-This option expects the current subset as its value (a reference to an array). If set two prompt lines are displayed:
+This option expects as its value the current subset (a reference to an array). If set two prompt lines are displayed -
 one for the current subset and one for the new subset.
 
 The subset is returned as an array reference.
@@ -614,7 +615,7 @@ C<layout>
 
 See C<layout> at L<Term::Choose/OPTIONS>.
 
-Values: 0, 1, 2, [3].
+Values: C<0, 1, 2, [3]>.
 
 =item
 
@@ -622,7 +623,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: C<0, [1]>.
 
 =item
 
@@ -630,7 +631,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: [0], 1, 2, 3, 4.
+Values: C<[0], 1, 2, 3, 4>.
 
 =back
 
@@ -649,7 +650,7 @@ The first argument is a reference to an array of arrays which have three element
 
 =item
 
-the key/option-name
+the key/option name
 
 =item
 
@@ -695,9 +696,9 @@ The optional third argument is a reference to a hash. The keys are
 
 C<in_place>
 
-If enabled the configurations hash (passed as second argument) is edited in place.
+If enabled the configuration hash (passed as second argument) is edited in place.
 
-Values: 0, [1].
+Values: C<0, [1]>.
 
 =item
 
@@ -705,7 +706,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: C<0, [1]>.
 
 =item
 
@@ -713,7 +714,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: [0], 1, 2, 3, 4.
+Values: C<[0], 1, 2, 3, 4>.
 
 =back
 
@@ -721,9 +722,10 @@ When C<choose_multi> is called it displays for each array entry a row with the p
 It is possible to scroll through the rows. If a row is selected the set and displayed value changes to the next. If the
 end of the list of the values is reached it begins from the beginning of the list.
 
-C<choose_multi> returns nothing if no changes are made. If the user has changed values C<choose_multi> modifies the hash
-passed as the second argument in place and returns 1. With the option C<in_place> set to 0 C<choose_multi> does no in
-place modifications but modifies a copy of the configuration hash. A refence to that copy is then returned.
+C<choose_multi> returns nothing if no changes are made. If the user has changed values and C<in_place> is set to 1
+C<choose_multi> modifies the hash passed as the second argument in place and returns 1. With the option C<in_place>
+set to 0 C<choose_multi> does no in place modifications but modifies a copy of the configuration hash. A refence to that
+modified copy is then returned.
 
 =head2 insert_sep
 
@@ -741,7 +743,7 @@ If the first argument is not defined it is returned nothing immediately.
 
 A thousands separator can be passed with a second argument.
 
-The thousands separator defaults to a comma (",").
+The thousands separator defaults to a comma (C<,>).
 
 =head2 length_longest
 
@@ -754,9 +756,9 @@ C<length_longest> expects as its argument a list of decoded strings passed a an 
 
 In scalar context C<length_longest> returns the length of the longest string - in list context it return a list where the
 the first item is the length of the longest string and the second is a reference to an array where the elements are the
-length of the corrensponding elements from array (reference) passed as the argument.
+length of the corrensponding elements from the array (reference) passed as the argument.
 
-"Length" means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
+L<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
 
 =head2 print_hash
 
@@ -764,8 +766,9 @@ Prints a simple hash to STDOUT (or STDERR if the output is redirected). Nested h
 has more keys than the terminal rows the output is divided up on several pages. The user can scroll through the single
 lines of the hash. The output of the hash is closed, when the user presses C<Return>.
 
-The first argument is the hash passed as a reference. The optional second argument is also a hash reference which
-allowes to set the following options:
+The first argument is the hash to be printed passed as a reference.
+
+The optional second argument is also a hash reference which allowes to set the following options:
 
 =over
 
@@ -782,7 +785,7 @@ to
 
 C<len_key>
 
-The value is the available width for printing the keys. The default value is the length (of print columns) of the
+The value sets the available print width for the keys. The default value is the length (of print columns) of the
 longest key.
 
 =item
@@ -796,13 +799,14 @@ terminal width is used instead.
 
 C<left_margin>
 
-C<left_margin> is added to C<len_key>. It defaults to 1.
+C<left_margin> is added to C<len_key>. It defaults to C<1>.
 
 =item
 
 C<right_margin>
 
-The C<right_margin> is subtracted from C<maxcols> if C<maxcols> is the maximum terminal width. The default value is 2.
+The C<right_margin> is subtracted from C<maxcols> if C<maxcols> is the maximum terminal width. The default value is
+C<2>.
 
 =item
 
@@ -810,7 +814,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: C<0, [1]>.
 
 =item
 
@@ -818,7 +822,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: [0], 1, 2, 3, 4.
+Values: C<[0], 1, 2, 3, 4>.
 
 =back
 
@@ -831,9 +835,9 @@ C<term_size> returns the current terminal width and the current terminal heigth.
 If the OS is MSWin32 C<chars> from L<Term::Size::Win32> is used to get the terminal width and the terminal heigth else
 C<GetTerminalSize> form L<Term::ReadKey> is used.
 
-On MSWin32 OS,  if it is written to the last column on the screen the cursor goes to the first column of the next line.
-To prevent this newline when writing to the terminal C<term_size> subtracts 1 from the terminal width before returning
-the width if the OS is MSWin32.
+On MSWin32 OS, if it is written to the last column on the screen the cursor goes to the first column of the next line.
+To prevent this newline when writing to a MSWindows the terminal C<term_size> subtracts 1 from the terminal width before
+returning the width if the OS is MSWin32.
 
 As an argument it can be passed an filehandle. With no argument the filehandle defaults to C<STDOUT>.
 
@@ -851,7 +855,7 @@ The fist argument is the prompt string. The optional second argument is a refere
 
 C<no_echo>
 
-Values: [0], 1.
+Values: C<[0], 1>.
 
 =back
 
@@ -864,8 +868,8 @@ It is not required to C<chomp> the returned string.
 
     $unicode = unicode_sprintf( $unicode, $available_width, $rightpad );
 
-C<unicode_sprintf> expects 2 or 3 arguments: the first argument is a decoded string, the second the available width and
-the third and optional argument tells how to justify the string.
+C<unicode_sprintf> expects 2 or 3 arguments: the first argument is a decoded string, the second argument is the
+available width and the third and optional argument tells how to pad the string.
 
 If the length of the string is greater than the available width it is truncated to the available width. If the string is
 equal to the available width nothing is done with the string. If the string length is less than the available width,
@@ -873,7 +877,7 @@ C<unicode_sprintf> adds spaces to the string until the string length is equal to
 argument is set to a true value, the spaces are added at the beginning of the string else they are added at the end of
 the string.
 
-"Length" or "width" means here number of print columns as returned by the C<columns> method from L<Unicode::GCString>.
+I<Length> or I<width> means here number of print columns as returned by the C<columns> method from L<Unicode::GCString>.
 
 =head2 unicode_trim
 
@@ -881,10 +885,10 @@ the string.
 
 The first argument is a decoded string, the second argument is the length.
 
-If the string is longer than passed length it is trimmed to that length at the right site and returned else the string is returned as it
-is.
+If the string is longer than passed length it is trimmed to that length at the right site and returned else the string
+is returned as it is.
 
-"Length" means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
+L<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
 
 =head1 REQUIREMENTS
 
