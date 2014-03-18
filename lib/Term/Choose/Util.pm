@@ -4,10 +4,10 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.000_03';
+our $VERSION = '0.000_04';
 use Exporter 'import';
-our @EXPORT_OK = qw( term_size print_hash util_readline insert_sep length_longest choose_a_number choose_a_subset
-                     choose_multi choose_a_directory unicode_trim unicode_sprintf );
+our @EXPORT_OK = qw( choose_a_directory choose_a_number choose_a_subset choose_multi insert_sep
+                     length_longest print_hash term_size unicode_sprintf unicode_trim util_readline );
 
 use Encode                qw( decode encode );
 use File::Basename        qw( dirname );
@@ -243,7 +243,7 @@ sub choose_a_number {
         }
         # Choose
         my $range = choose(
-            [ undef, @choices_range, $confirm_tmp ],
+            [ undef, $confirm_tmp, @choices_range ],
             { prompt => $prompt, layout => 3, justify => 1, mouse => $mouse,
               clear_screen => $clear, undef => $back_tmp }
         );
@@ -471,7 +471,7 @@ Term::Choose::Util - CLI related functions.
 
 =head1 VERSION
 
-Version 0.000_03
+Version 0.000_04
 
 =cut
 
@@ -512,7 +512,7 @@ C<layout>
 
 See C<layout> at L<Term::Choose/OPTIONS>
 
-Values: C<0, [1], 2, 3>.
+Values: I<0, [1], 2, 3>.
 
 =item
 
@@ -520,7 +520,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: C<0, [1]>.
+Values: I<0, [1]>.
 
 =item
 
@@ -528,7 +528,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: C<[0], 1, 2, 3, 4>.
+Values: I<[0], 1, 2, 3, 4>.
 
 =back
 
@@ -615,7 +615,7 @@ C<layout>
 
 See C<layout> at L<Term::Choose/OPTIONS>.
 
-Values: C<0, 1, 2, [3]>.
+Values: 0, 1, 2, [3].
 
 =item
 
@@ -623,7 +623,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: C<0, [1]>.
+Values: 0, [1].
 
 =item
 
@@ -631,7 +631,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: C<[0], 1, 2, 3, 4>.
+Values: [0], 1, 2, 3, 4.
 
 =back
 
@@ -698,7 +698,7 @@ C<in_place>
 
 If enabled the configuration hash (passed as second argument) is edited in place.
 
-Values: C<0, [1]>.
+Values: 0,[1].
 
 =item
 
@@ -706,7 +706,7 @@ C<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: C<0, [1]>.
+Values: 0,[1].
 
 =item
 
@@ -714,7 +714,7 @@ C<mouse>
 
 See C<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: C<[0], 1, 2, 3, 4>.
+Values: [0],1,2,3,4.
 
 =back
 
@@ -729,13 +729,13 @@ modified copy is then returned.
 
 =head2 insert_sep
 
-    $number = insert_sep( $integer, $separator );
+    $integer = insert_sep( $integer, $separator );
 
 Inserts a thousands separator.
 
-The following substitution is applied to the integer (or any Unicode string) passed with the first argument.
+The following substitution is applied to the integer passed with the first argument:
 
-    $number =~ s/(\d)(?=(?:\d{3})+\b)/$1$separator/g;
+    $integer =~ s/(\d)(?=(?:\d{3})+\b)/$1$separator/g;
 
 After the substitution the number is returned.
 
@@ -758,7 +758,7 @@ In scalar context C<length_longest> returns the length of the longest string - i
 the first item is the length of the longest string and the second is a reference to an array where the elements are the
 length of the corrensponding elements from the array (reference) passed as the argument.
 
-L<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
+I<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
 
 =head2 print_hash
 
@@ -774,7 +774,7 @@ The optional second argument is also a hash reference which allowes to set the f
 
 =item
 
-C<keys>
+I<keys>
 
 The keys which should be printed in the given order. The keys are passed with an array reference. If not set it defaults
 to
@@ -783,46 +783,46 @@ to
 
 =item
 
-C<len_key>
+I<len_key>
 
 The value sets the available print width for the keys. The default value is the length (of print columns) of the
 longest key.
 
 =item
 
-C<maxcols>
+I<maxcols>
 
 The maximum width of the output. If not set or set to 0 or set to a value higher than the terminal width the maximum
 terminal width is used instead.
 
 =item
 
-C<left_margin>
+I<left_margin>
 
-C<left_margin> is added to C<len_key>. It defaults to C<1>.
-
-=item
-
-C<right_margin>
-
-The C<right_margin> is subtracted from C<maxcols> if C<maxcols> is the maximum terminal width. The default value is
-C<2>.
+I<left_margin> is added to I<len_key>. It defaults to I<1>.
 
 =item
 
-C<clear_screen>
+I<right_margin>
+
+The C<right_margin> is subtracted from I<maxcols> if I<maxcols> is the maximum terminal width. The default value is
+I<2>.
+
+=item
+
+I<clear_screen>
 
 If enabled, the screen is cleared before the output.
 
-Values: C<0, [1]>.
+Values: 0, [1].
 
 =item
 
-C<mouse>
+I<mouse>
 
-See C<mouse> at L<Term::Choose/OPTIONS>.
+See I<mouse> at L<Term::Choose/OPTIONS>.
 
-Values: C<[0], 1, 2, 3, 4>.
+Values: [0], 1, 2, 3, 4.
 
 =back
 
@@ -840,29 +840,6 @@ To prevent this newline when writing to a MSWindows the terminal C<term_size> su
 returning the width if the OS is MSWin32.
 
 As an argument it can be passed an filehandle. With no argument the filehandle defaults to C<STDOUT>.
-
-=head2 util_readline
-
-C<util_readline> reads a line.
-
-    $string = util_readline( $prompt, { no_echo => 0 } )
-
-The fist argument is the prompt string. The optional second argument is a reference to a hash. The only key/option is
-
-=over
-
-=item
-
-C<no_echo>
-
-Values: C<[0], 1>.
-
-=back
-
-C<util_readline> returns C<undef> if C<Strg>-C<D> is pressed independently of whether the input buffer is empty or
-filled.
-
-It is not required to C<chomp> the returned string.
 
 =head2 unicode_sprintf
 
@@ -888,7 +865,31 @@ The first argument is a decoded string, the second argument is the length.
 If the string is longer than passed length it is trimmed to that length at the right site and returned else the string
 is returned as it is.
 
-L<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
+I<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
+
+=head2 util_readline
+
+C<util_readline> reads a line.
+
+    $string = util_readline( $prompt, { no_echo => 0 } )
+
+The fist argument is the prompt string. The optional second argument is a reference to a hash. The only key/option is
+
+=over
+
+=item
+
+C<no_echo>
+
+Values: C<[0], 1>.
+
+=back
+
+C<util_readline> returns C<undef> if C<Strg>-C<D> is pressed independently of whether the input buffer is empty or
+filled.
+
+It is not required to C<chomp> the returned string.
+
 
 =head1 REQUIREMENTS
 
