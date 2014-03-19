@@ -24,11 +24,11 @@ requires:
   File::Basename: 0
   File::Spec::Functions: 0
   List::Util: 0
-  Term::Choose: 1.104
+  Term::Choose: 1.105
   Term::ReadKey: 0
   Text::LineFold: 0
   Unicode::GCString: 0
   perl: 5.010001
   strict: 0
   warnings: 0
-version: 0.000_04
+version: 0.001

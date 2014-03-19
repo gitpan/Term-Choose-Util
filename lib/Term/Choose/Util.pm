@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.000_04';
+our $VERSION = '0.001';
 use Exporter 'import';
 our @EXPORT_OK = qw( choose_a_directory choose_a_number choose_a_subset choose_multi insert_sep
                      length_longest print_hash term_size unicode_sprintf unicode_trim util_readline );
@@ -32,127 +32,21 @@ sub SAVE_CURSOR_POSITION    () { "\e[s" }
 sub RESTORE_CURSOR_POSITION () { "\e[u" }
 
 
-sub term_size {
-    my ( $handle_out ) = shift // \*STDOUT;
-    if ( $^O eq 'MSWin32' ) {
-        my ( $width, $heigth ) = chars( $handle_out );
-        return $width - 1, $heigth;
-    }
-    return( ( GetTerminalSize( $handle_out ) )[ 0, 1 ] );
-}
-
-
-sub length_longest {
-    my ( $list ) = @_;
-    my $len = [];
-    my $longest = 0;
-    for my $i ( 0 .. $#$list ) {
-        my $gcs = Unicode::GCString->new( $list->[$i] );
-        $len->[$i] = $gcs->columns();
-        $longest = $len->[$i] if $len->[$i] > $longest;
-    }
-    if ( wantarray ) {
-        $longest, $len;
-    }
-    else {
-        $longest;
-    }
-}
-
-
-sub print_hash {
-    my ( $hash, $opt ) = @_;
-    $opt //= {};
-    my $left_margin  = $opt->{left_margin}  // 1;
-    my $right_margin = $opt->{right_margin} // 2;
-    my $clear        = $opt->{clear_screen} // 1;
-    my $mouse        = $opt->{mouse}        // 1;
-    my $keys         = $opt->{keys}         // [ sort keys %$hash ];
-    my $len_key      = $opt->{len_key}      // length_longest( $keys );
-    my $maxcols      = $opt->{maxcols};
-    #-----------------------------------------------------------------#
-    my $line_fold    = $opt->{lf} // { Charset => 'utf-8', Newline => "\n",
-                                       OutputCharset => '_UNICODE_', Urgent => 'FORCE' };
-    my $term_width = ( term_size() )[0];
-    if ( ! $maxcols || $maxcols > $term_width  ) {
-        $maxcols = $term_width - $right_margin;
-    }
-    $len_key += $left_margin;
-    my $s_tab = $len_key + length( ' : ' );
-    my $lf = Text::LineFold->new( %$line_fold, ColMax => $maxcols );
-    my @vals = ();
-    for my $key ( @$keys ) {
-        next if ! exists $hash->{$key};
-        my $pr_key = sprintf "%*.*s : ", $len_key, $len_key, $key;
-        my $text = $lf->fold( '' , ' ' x $s_tab, $pr_key . ( ref( $hash->{$key} ) ? ref( $hash->{$key} ) : $hash->{$key} ) );
-        $text =~ s/\R+\z//;
-        for my $val ( split /\R+/, $text ) {
-            push @vals, $val;
-        }
-    }
-    choose(
-        [ @vals ],
-        { layout => 3, justify => 0, mouse => $mouse, clear_screen => $clear }
-    );
-}
-
-
-sub util_readline {
-    my ( $prompt, $opt ) = @_;
-    $opt //= {};
-    my $str = '';
-    local $| = 1;
-    print SAVE_CURSOR_POSITION;
-    _print_readline( $prompt, $str, $opt );
-    ReadMode 'cbreak';
-    while ( 1 ) {
-        my $key = ReadKey;
-        return if ! defined $key;
-        if ( $key eq "\cD" ) {
-            print "\n";
-            return;
-        }
-        elsif ( $key eq "\n" or $key eq "\r" ) {
-            print "\n";
-            return $str;
-        }
-        elsif ( ord $key == BSPACE || $key eq "\cH" ) {
-            $str =~ s/\X\z// if $str; # ?
-            _print_readline( $prompt, $str, $opt );
-            next;
-        }
-        elsif ( $key !~ /^\p{Print}\z/ ) {
-            _print_readline( $prompt, $str, $opt );
-            next;
-        }
-        $str .= $key;
-        _print_readline( $prompt, $str, $opt );
-    }
-    ReadMode 0;
-    return $str;
-}
-
-sub _print_readline {
-    my ( $prompt, $str, $opt ) = @_;
-    my $no_echo = $opt->{no_echo} // 0;
-    print RESTORE_CURSOR_POSITION;
-    print CLEAR_TO_END_OF_SCREEN;
-    print $prompt . ( $no_echo ? '' : $str );
-}
-
 
 sub choose_a_directory {
     my ( $dir, $opt ) = @_;
     $opt //= {};
-    my $clear  = $opt->{clear_screen} // 1;
-    my $mouse  = $opt->{mouse}        // 1;
-    my $layout = $opt->{layout}       // 1;
-    #-------------------------------------------#
-    my $confirm      = $opt->{confirm}      // '<OK>';
-    my $up           = $opt->{up}           // '<UP>';
-    my $back         = $opt->{back}         // '<<';
-    my $curr     = $dir;
-    my $previous = $dir;
+    my $show_hidden = $opt->{show_hidden}  // 1;
+    my $clear       = $opt->{clear_screen} // 1;
+    my $mouse       = $opt->{mouse}        // 0;
+    my $layout      = $opt->{layout}       // 3;
+    my $order       = $opt->{order}        // 1;
+    #------------------------------------------#
+    my $confirm     = $opt->{confirm}      // '- OK -';
+    my $up          = $opt->{up}           // '- Up -';
+    my $back        = $opt->{back}         // '- << -';
+    my $curr        = $dir;
+    my $previous    = $dir;
     while ( 1 ) {
         my ( $dh, @dirs );
         if ( ! eval {
@@ -166,6 +60,7 @@ sub choose_a_directory {
         }
         while ( my $file = readdir $dh ) {
             next if $file =~ /^\.\.?\z/;
+            next if $file =~ /^\./ && ! $show_hidden;
             push @dirs, decode( 'locale_fs', $file ) if -d catdir $dir, $file;
         }
         closedir $dh;
@@ -174,7 +69,7 @@ sub choose_a_directory {
         my $choice = choose(
             [ undef, $confirm, $up, sort( @dirs ) ],
             { prompt => $prompt, undef => $back, default => 0, mouse => $mouse,
-              layout => $layout, clear_screen => $clear }
+              layout => $layout, order => $order, clear_screen => $clear }
         );
         return if ! defined $choice;
         return $previous if $choice eq $confirm;
@@ -192,12 +87,12 @@ sub choose_a_number {
     my $thsd_sep   = $opt->{thsd_sep}     // ',';
     my $name       = $opt->{name}         // '';
     my $clear      = $opt->{clear_screen} // 1;
-    my $mouse      = $opt->{mouse}        // 1;
-    #-----------------------------------------------#
-    my $back       = $opt->{back}       // 'BACK';
-    my $back_short = $opt->{back_short} // '<<';
-    my $confirm    = $opt->{confirm}    // 'CONFIRM';
-    my $reset      = $opt->{reset}      // 'reset';
+    my $mouse      = $opt->{mouse}        // 0;
+    #-------------------------------------------#
+    my $back       = $opt->{back}         // 'BACK';
+    my $back_short = $opt->{back_short}   // '<<';
+    my $confirm    = $opt->{confirm}      // 'CONFIRM';
+    my $reset      = $opt->{reset}        // 'reset';
     my $tab        = '  -  ';
     my $gcs_tab    = Unicode::GCString->new( $tab );
     my $len_tab = $gcs_tab->columns;
@@ -283,14 +178,21 @@ sub choose_a_subset {
     my ( $available, $opt ) = @_;
     $opt //= {};
     #             $opt->{current}
-    my $layout  = $opt->{layout}  // 3;
     my $clear   = $opt->{clear_screen} // 1;
-    my $mouse   = $opt->{mouse}        // 1;
+    my $mouse   = $opt->{mouse}        // 0;
+    my $layout  = $opt->{layout}       // 3;
+    my $order   = $opt->{order}        // 1;
     #--------------------------------------#
+    #my $justify
+    my $prefix  = $opt->{prefix}       // ( $layout == 3 ? '- ' : '' );
     my $confirm = $opt->{confirm} // 'CONFIRM';
     my $back    = $opt->{back}    // 'BACK';
-    $confirm = '  ' . $confirm;
-    $back    = '  ' . $back;
+    if ( $prefix ) {
+        my $gcs_prefix = Unicode::GCString->new( $prefix );
+        my $len_prefix = $gcs_prefix->columns();
+        $confirm = ( ' ' x $len_prefix ) . $confirm;
+        $back    = ( ' ' x $len_prefix ) . $back;
+    }
     my $key_cur = 'Current > ';
     my $key_new = '    New > ';
     my $gcs_cur = Unicode::GCString->new( $key_cur );
@@ -306,9 +208,9 @@ sub choose_a_subset {
         my @pre = ( undef, $confirm );
         # Choose
         my @choice = choose(
-            [ @pre, map( "- $_", @$available ) ],
+            [ @pre, map( $prefix . $_, @$available ) ],
             { prompt => $prompt, layout => $layout, mouse => $mouse, clear_screen => $clear, justify => 0,
-              lf => [ 0, $len_key ], no_spacebar => [ 0 .. $#pre ], undef => $back }
+              lf => [ 0, $len_key ], order => $order, no_spacebar => [ 0 .. $#pre ], undef => $back }
         );
         if ( ! @choice || ! defined $choice[0] ) {
             if ( @$new ) {
@@ -321,11 +223,11 @@ sub choose_a_subset {
         }
         if ( $choice[0] eq $confirm ) {
             shift @choice;
-            push @$new, map { s/^-\s//; $_ } @choice if @choice;
+            push @$new, map { s/^\Q$prefix\E//; $_ } @choice if @choice;
             return $new if @$new;
             return;
         }
-        push @$new, map { s/^-\s//; $_ } @choice;
+        push @$new, map { s/^\Q$prefix\E//; $_ } @choice;
     }
 }
 
@@ -335,10 +237,10 @@ sub choose_multi {
     $opt //= {};
     my $in_place = $opt->{in_place}     // 1;
     my $clear    = $opt->{clear_screen} // 1;
-    my $mouse    = $opt->{mouse}        // 1;
-    #-----------------------------------#
-    my $back     = $opt->{back}     // 'BACK';
-    my $confirm  = $opt->{confirm}  // 'CONFIRM';
+    my $mouse    = $opt->{mouse}        // 0;
+    #---------------------------------------#
+    my $back     = $opt->{back}         // 'BACK';
+    my $confirm  = $opt->{confirm}      // 'CONFIRM';
     $back    = '  ' . $back;
     $confirm = '  ' . $confirm;
     my $longest = 0;
@@ -402,26 +304,70 @@ sub insert_sep {
 }
 
 
+sub length_longest {
+    my ( $list ) = @_;
+    my $len = [];
+    my $longest = 0;
+    for my $i ( 0 .. $#$list ) {
+        my $gcs = Unicode::GCString->new( $list->[$i] );
+        $len->[$i] = $gcs->columns();
+        $longest = $len->[$i] if $len->[$i] > $longest;
+    }
+    return wantarray ? ( $longest, $len ) : $longest;
+}
 
-# from https://rt.cpan.org/Public/Bug/Display.html?id=84549
 
-sub unicode_trim {
-    my ( $unicode, $len ) = @_;
-    return '' if $len <= 0;
-    my $gcs = Unicode::GCString->new( $unicode );
-    my $pos = $gcs->pos;
-    $gcs->pos( 0 );
-    my $cols = 0;
-    my $gc;
-    while ( defined( $gc = $gcs->next ) ) {
-        if ( $len < ( $cols += $gc->columns ) ) {
-            my $ret = $gcs->substr( 0, $gcs->pos - 1 );
-            $gcs->pos( $pos );
-            return $ret->as_string;
+sub print_hash {
+    my ( $hash, $opt ) = @_;
+    $opt //= {};
+    my $left_margin  = $opt->{left_margin}  // 1;
+    my $right_margin = $opt->{right_margin} // 2;
+    my $keys         = $opt->{keys}         // [ sort keys %$hash ];
+    my $len_key      = $opt->{len_key}      // length_longest( $keys );
+    my $maxcols      = $opt->{maxcols};
+    my $clear        = $opt->{clear_screen} // 1;
+    my $mouse        = $opt->{mouse}        // 0;
+    #-----------------------------------------------------------------#
+    my $line_fold    = $opt->{lf}           // { Charset => 'utf-8', Newline => "\n",
+                                                 OutputCharset => '_UNICODE_', Urgent => 'FORCE' };
+    my $term_width = ( term_size() )[0];
+    if ( ! $maxcols || $maxcols > $term_width  ) {
+        $maxcols = $term_width - $right_margin;
+    }
+    $len_key += $left_margin;
+    my $sep = ' : ';
+    my $len_sep = length( $sep );
+    if ( $len_key + $len_sep > int( $maxcols / 3 * 2 ) ) {
+        $len_key = int( $maxcols / 3 * 2 ) - $len_sep;
+    }
+    my $lf = Text::LineFold->new( %$line_fold, ColMax => $maxcols );
+    my @vals = ();
+    for my $key ( @$keys ) {
+        next if ! exists $hash->{$key};
+        my $pr_key = sprintf "%*.*s%*s", $len_key, $len_key, $key, $len_sep, $sep;
+        my $text = $lf->fold(
+            '' , ' ' x ( $len_key + $len_sep ),
+            $pr_key . ( ref( $hash->{$key} ) ? ref( $hash->{$key} ) : $hash->{$key} )
+        );
+        $text =~ s/\R+\z//;
+        for my $val ( split /\R+/, $text ) {
+            push @vals, $val;
         }
     }
-    $gcs->pos( $pos );
-    return $gcs->as_string;
+    choose(
+        [ @vals ],
+        { layout => 3, justify => 0, mouse => $mouse, clear_screen => $clear }
+    );
+}
+
+
+sub term_size {
+    my ( $handle_out ) = shift // \*STDOUT;
+    if ( $^O eq 'MSWin32' ) {
+        my ( $width, $heigth ) = chars( $handle_out );
+        return $width - 1, $heigth;
+    }
+    return( ( GetTerminalSize( $handle_out ) )[ 0, 1 ] );
 }
 
 
@@ -453,7 +399,70 @@ sub unicode_sprintf {
     return $unicode;
 }
 
+# from https://rt.cpan.org/Public/Bug/Display.html?id=84549
 
+sub unicode_trim {
+    my ( $unicode, $len ) = @_;
+    return '' if $len <= 0;
+    my $gcs = Unicode::GCString->new( $unicode );
+    my $pos = $gcs->pos;
+    $gcs->pos( 0 );
+    my $cols = 0;
+    my $gc;
+    while ( defined( $gc = $gcs->next ) ) {
+        if ( $len < ( $cols += $gc->columns ) ) {
+            my $ret = $gcs->substr( 0, $gcs->pos - 1 );
+            $gcs->pos( $pos );
+            return $ret->as_string;
+        }
+    }
+    $gcs->pos( $pos );
+    return $gcs->as_string;
+}
+
+
+sub util_readline {
+    my ( $prompt, $opt ) = @_;
+    $opt //= {};
+    my $str = '';
+    local $| = 1;
+    print SAVE_CURSOR_POSITION;
+    _print_readline( $prompt, $str, $opt );
+    ReadMode 'cbreak';
+    while ( 1 ) {
+        my $key = ReadKey;
+        return if ! defined $key;
+        if ( $key eq "\cD" ) {
+            print "\n";
+            return;
+        }
+        elsif ( $key eq "\n" or $key eq "\r" ) {
+            print "\n";
+            return $str;
+        }
+        elsif ( ord $key == BSPACE || $key eq "\cH" ) {
+            $str =~ s/\X\z// if $str; # ?
+            _print_readline( $prompt, $str, $opt );
+            next;
+        }
+        elsif ( $key !~ /^\p{Print}\z/ ) {
+            _print_readline( $prompt, $str, $opt );
+            next;
+        }
+        $str .= $key;
+        _print_readline( $prompt, $str, $opt );
+    }
+    ReadMode 0;
+    return $str;
+}
+
+sub _print_readline {
+    my ( $prompt, $str, $opt ) = @_;
+    my $no_echo = $opt->{no_echo} // 0;
+    print RESTORE_CURSOR_POSITION;
+    print CLEAR_TO_END_OF_SCREEN;
+    print $prompt . ( $no_echo ? '' : $str );
+}
 
 
 
@@ -471,7 +480,7 @@ Term::Choose::Util - CLI related functions.
 
 =head1 VERSION
 
-Version 0.000_04
+Version 0.001
 
 =cut
 
@@ -480,6 +489,8 @@ Version 0.000_04
 See L</SUBROUTINES>.
 
 =head1 DESCRIPTION
+
+This module is experimental.
 
 This module provides some CLI related functions required by L<App::DBBrowser>, L<Term::TablePrint> and L<App::YTDL>.
 
@@ -492,6 +503,10 @@ Nothing by default.
 Ensure the encoding layer for STDOUT, STDERR and STDIN are set to the correct value.
 
 Values in brackets are default values.
+
+Unknown option names are ignored.
+
+To get informations about the different I<mouse> modes see I<mouse> at L<Term::Choose/OPTIONS>.
 
 =head2 choose_a_directory
 
@@ -508,27 +523,45 @@ The second and optional argument is a reference to a hash. With this hash it can
 
 =item
 
-C<layout>
+show_hidden
 
-See C<layout> at L<Term::Choose/OPTIONS>
+If enabled, hidden directories are added to the available directories.
 
-Values: I<0, [1], 2, 3>.
+Values: 0,[1].
 
 =item
 
-C<clear_screen>
+layout
+
+See I<layout> at L<Term::Choose/OPTIONS>
+
+Values: 0,[1],2,3.
+
+=item
+
+order
+
+If set to 1 the items are ordered vertically else they are ordered horinzontally.
+
+This option has no meaning if I<layout> is set to 3.
+
+Values: [0],1.
+
+=item
+
+clear_screen
 
 If enabled, the screen is cleared before the output.
 
-Values: I<0, [1]>.
+Values: 0,[1].
 
 =item
 
-C<mouse>
+mouse
 
-See C<mouse> at L<Term::Choose/OPTIONS>.
+Set the mouse mode.
 
-Values: I<[0], 1, 2, 3, 4>.
+Values: [0],1,2,3,4.
 
 =back
 
@@ -550,41 +583,41 @@ The second and optional argument is a reference to a hash with these keys (optio
 
 =item
 
-C<current>
+current
 
 The current value. If set two prompt lines are displayed - one for the current number and one for the new number.
 
 =item
 
-C<name>
+name
 
 Sets the name of the number seen in the prompt line.
 
-Default: empty string (C<"">);
+Default: empty string ("");
 
 =item
 
-C<thsd_sep>
+thsd_sep
 
 Sets the thousands separator.
 
-Default: comma (C<,>).
+Default: comma (,).
 
 =item
 
-C<clear_screen>
+clear_screen
 
 If enabled, the screen is cleared before the output.
 
-Values: C<0, [1]>.
+Values: 0,[1].
 
 =item
 
-C<mouse>
+mouse
 
-See C<mouse> at L<Term::Choose/OPTIONS>.
+Set the mouse mode.
 
-Values: C<[0], 1, 2, 3, 4>.
+Values: [0],1,2,3,4.
 
 =back
 
@@ -602,7 +635,7 @@ The optional second argument is a hash reference. The following options are avai
 
 =item
 
-C<current>
+current
 
 This option expects as its value the current subset (a reference to an array). If set two prompt lines are displayed -
 one for the current subset and one for the new subset.
@@ -611,27 +644,37 @@ The subset is returned as an array reference.
 
 =item
 
-C<layout>
+layout
 
-See C<layout> at L<Term::Choose/OPTIONS>.
+See I<layout> at L<Term::Choose/OPTIONS>.
 
-Values: 0, 1, 2, [3].
+Values: 0,1,2,[3].
 
 =item
 
-C<clear_screen>
+order
+
+If set to 1 the items are ordered vertically else they are ordered horinzontally.
+
+This option has no meaning if I<layout> is set to 3.
+
+Values: [0],1.
+
+=item
+
+clear_screen
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: 0,[1].
 
 =item
 
-C<mouse>
+mouse
 
-See C<mouse> at L<Term::Choose/OPTIONS>.
+Set the mouse mode.
 
-Values: [0], 1, 2, 3, 4.
+Values: [0],1,2,3,4.
 
 =back
 
@@ -694,7 +737,7 @@ The optional third argument is a reference to a hash. The keys are
 
 =item
 
-C<in_place>
+in_place
 
 If enabled the configuration hash (passed as second argument) is edited in place.
 
@@ -702,7 +745,7 @@ Values: 0,[1].
 
 =item
 
-C<clear_screen>
+clear_screen
 
 If enabled, the screen is cleared before the output.
 
@@ -710,9 +753,9 @@ Values: 0,[1].
 
 =item
 
-C<mouse>
+mouse
 
-See C<mouse> at L<Term::Choose/OPTIONS>.
+Set the mouse mode.
 
 Values: [0],1,2,3,4.
 
@@ -774,55 +817,58 @@ The optional second argument is also a hash reference which allowes to set the f
 
 =item
 
-I<keys>
+keys
 
-The keys which should be printed in the given order. The keys are passed with an array reference. If not set it defaults
-to
+The keys which should be printed in the given order. The keys are passed with an array reference. Keys which don't exist
+are ignored. If not set I<keys> defaults to
 
     [ sort keys %$hash ]
 
 =item
 
-I<len_key>
+len_key
 
 The value sets the available print width for the keys. The default value is the length (of print columns) of the
 longest key.
 
+If the available width for the values is less than one third of the total available width the keys are trimmed until the
+available width for the values is at least one third of the total available width.
+
 =item
 
-I<maxcols>
+maxcols
 
 The maximum width of the output. If not set or set to 0 or set to a value higher than the terminal width the maximum
 terminal width is used instead.
 
 =item
 
-I<left_margin>
+left_margin
 
-I<left_margin> is added to I<len_key>. It defaults to I<1>.
-
-=item
-
-I<right_margin>
-
-The C<right_margin> is subtracted from I<maxcols> if I<maxcols> is the maximum terminal width. The default value is
-I<2>.
+I<left_margin> is added to I<len_key>. It defaults to 1.
 
 =item
 
-I<clear_screen>
+right_margin
+
+The I<right_margin> is subtracted from I<maxcols> if I<maxcols> is the maximum terminal width. The default value is
+2.
+
+=item
+
+clear_screen
 
 If enabled, the screen is cleared before the output.
 
-Values: 0, [1].
+Values: 0,[1].
 
 =item
 
-I<mouse>
+mouse
 
-See I<mouse> at L<Term::Choose/OPTIONS>.
+Set the mouse mode.
 
-Values: [0], 1, 2, 3, 4.
+Values: [0],1,2,3,4.
 
 =back
 
@@ -879,9 +925,9 @@ The fist argument is the prompt string. The optional second argument is a refere
 
 =item
 
-C<no_echo>
+no_echo
 
-Values: C<[0], 1>.
+Values: [0],1.
 
 =back
 
@@ -889,7 +935,6 @@ C<util_readline> returns C<undef> if C<Strg>-C<D> is pressed independently of wh
 filled.
 
 It is not required to C<chomp> the returned string.
-
 
 =head1 REQUIREMENTS
 

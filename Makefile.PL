@@ -33,7 +33,7 @@ WriteMakefile(
         'File::Basename'        => 0,
         'File::Spec::Functions' => 0,
         'List::Util'            => 0,
-        'Term::Choose'          => '1.104',
+        'Term::Choose'          => '1.105',
         'Term::ReadKey'         => 0,
         'Text::LineFold'        => 0,
         'Unicode::GCString'     => 0,

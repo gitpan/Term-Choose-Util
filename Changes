@@ -1,6 +1,10 @@
 Revision history for Term::Choose::Util
 
 
+0.001   2014-03-19
+        - Update options.
+        - Improved documentation.
+
 0.000_04   2014-03-18
         - Pod test.
 
