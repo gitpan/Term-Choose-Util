@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 use Exporter 'import';
 our @EXPORT_OK = qw( choose_a_directory choose_a_number choose_a_subset choose_multi insert_sep
                      length_longest print_hash term_size unicode_sprintf unicode_trim util_readline );
@@ -480,7 +480,7 @@ Term::Choose::Util - CLI related functions.
 
 =head1 VERSION
 
-Version 0.001
+Version 0.002
 
 =cut
 
@@ -541,7 +541,7 @@ Values: 0,[1],2,3.
 
 order
 
-If set to 1 the items are ordered vertically else they are ordered horinzontally.
+If set to 1 the items are ordered vertically else they are ordered horizontally.
 
 This option has no meaning if I<layout> is set to 3.
 
@@ -654,7 +654,7 @@ Values: 0,1,2,[3].
 
 order
 
-If set to 1 the items are ordered vertically else they are ordered horinzontally.
+If set to 1 the items are ordered vertically else they are ordered horizontally.
 
 This option has no meaning if I<layout> is set to 3.
 
@@ -767,8 +767,8 @@ end of the list of the values is reached it begins from the beginning of the lis
 
 C<choose_multi> returns nothing if no changes are made. If the user has changed values and C<in_place> is set to 1
 C<choose_multi> modifies the hash passed as the second argument in place and returns 1. With the option C<in_place>
-set to 0 C<choose_multi> does no in place modifications but modifies a copy of the configuration hash. A refence to that
-modified copy is then returned.
+set to 0 C<choose_multi> does no in place modifications but modifies a copy of the configuration hash. A reference to
+that modified copy is then returned.
 
 =head2 insert_sep
 
@@ -799,7 +799,7 @@ C<length_longest> expects as its argument a list of decoded strings passed a an 
 
 In scalar context C<length_longest> returns the length of the longest string - in list context it return a list where the
 the first item is the length of the longest string and the second is a reference to an array where the elements are the
-length of the corrensponding elements from the array (reference) passed as the argument.
+length of the corresponding elements from the array (reference) passed as the argument.
 
 I<Length> means here number of print columns as returned by the C<columns> method from  L<Unicode::GCString>.
 
@@ -811,7 +811,7 @@ lines of the hash. The output of the hash is closed, when the user presses C<Ret
 
 The first argument is the hash to be printed passed as a reference.
 
-The optional second argument is also a hash reference which allowes to set the following options:
+The optional second argument is also a hash reference which allows to set the following options:
 
 =over
 
@@ -874,15 +874,15 @@ Values: [0],1,2,3,4.
 
 =head2 term_size
 
-C<term_size> returns the current terminal width and the current terminal heigth.
+C<term_size> returns the current terminal width and the current terminal height.
 
-    ( $width, $heigth ) = term_size()
+    ( $width, $height ) = term_size()
 
-If the OS is MSWin32 C<chars> from L<Term::Size::Win32> is used to get the terminal width and the terminal heigth else
+If the OS is MSWin32 C<chars> from L<Term::Size::Win32> is used to get the terminal width and the terminal height else
 C<GetTerminalSize> form L<Term::ReadKey> is used.
 
 On MSWin32 OS, if it is written to the last column on the screen the cursor goes to the first column of the next line.
-To prevent this newline when writing to a MSWindows the terminal C<term_size> subtracts 1 from the terminal width before
+To prevent this newline when writing to a Windows terminal C<term_size> subtracts 1 from the terminal width before
 returning the width if the OS is MSWin32.
 
 As an argument it can be passed an filehandle. With no argument the filehandle defaults to C<STDOUT>.

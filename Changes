@@ -1,6 +1,10 @@
 Revision history for Term::Choose::Util
 
 
+0.002   2014-03-19
+        - Added spelling test.
+        - Fixed some spelling errors.
+
 0.001   2014-03-19
         - Update options.
         - Improved documentation.
