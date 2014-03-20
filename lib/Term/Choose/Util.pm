@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.002';
+our $VERSION = '0.003';
 use Exporter 'import';
 our @EXPORT_OK = qw( choose_a_directory choose_a_number choose_a_subset choose_multi insert_sep
                      length_longest print_hash term_size unicode_sprintf unicode_trim util_readline );
@@ -20,7 +20,7 @@ use Term::ReadKey qw( GetTerminalSize ReadKey ReadMode );
 use Text::LineFold;
 use Unicode::GCString;
 
-use if $^O eq 'MSWin32', 'Term::Size::Win32' => q( chars );
+use if $^O eq 'MSWin32', 'Win32::Console'; # => qw( STD_OUTPUT_HANDLE STD_ERROR_HANDLE );
 use if $^O eq 'MSWin32', 'Win32::Console::ANSI';
 
 END { ReadMode 0 }
@@ -362,12 +362,14 @@ sub print_hash {
 
 
 sub term_size {
-    my ( $handle_out ) = shift // \*STDOUT;
+    #my ( $handle_out ) = shift // 1;
     if ( $^O eq 'MSWin32' ) {
-        my ( $width, $heigth ) = chars( $handle_out );
+        #my $console = Win32::Console->new();
+        #$console->Select( STD_OUTPUT_HANDLE );
+        my ( $width, $heigth ) = Win32::Console->new()->Size();
         return $width - 1, $heigth;
     }
-    return( ( GetTerminalSize( $handle_out ) )[ 0, 1 ] );
+    return( ( GetTerminalSize() )[ 0, 1 ] );
 }
 
 
@@ -480,7 +482,7 @@ Term::Choose::Util - CLI related functions.
 
 =head1 VERSION
 
-Version 0.002
+Version 0.003
 
 =cut
 
@@ -545,7 +547,7 @@ If set to 1 the items are ordered vertically else they are ordered horizontally.
 
 This option has no meaning if I<layout> is set to 3.
 
-Values: [0],1.
+Values: 0,[1].
 
 =item
 
@@ -658,7 +660,7 @@ If set to 1 the items are ordered vertically else they are ordered horizontally.
 
 This option has no meaning if I<layout> is set to 3.
 
-Values: [0],1.
+Values: 0,[1].
 
 =item
 
@@ -687,7 +689,7 @@ Values: [0],1,2,3,4.
         }
     }
 
-The first argument is a reference to an array of arrays which have three elements:
+The first argument is a reference to an array of arrays. These arrays have three elements:
 
 =over
 
@@ -878,14 +880,12 @@ C<term_size> returns the current terminal width and the current terminal height.
 
     ( $width, $height ) = term_size()
 
-If the OS is MSWin32 C<chars> from L<Term::Size::Win32> is used to get the terminal width and the terminal height else
+If the OS is MSWin32 C<Size> from L<Win32::Console> is used to get the terminal width and the terminal height else
 C<GetTerminalSize> form L<Term::ReadKey> is used.
 
 On MSWin32 OS, if it is written to the last column on the screen the cursor goes to the first column of the next line.
 To prevent this newline when writing to a Windows terminal C<term_size> subtracts 1 from the terminal width before
 returning the width if the OS is MSWin32.
-
-As an argument it can be passed an filehandle. With no argument the filehandle defaults to C<STDOUT>.
 
 =head2 unicode_sprintf
 
