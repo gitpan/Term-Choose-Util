@@ -1,6 +1,12 @@
 Revision history for Term::Choose::Util
 
 
+0.004   2014-04-09
+        - Update options.
+        - Update function "insert_sep".
+        - Update documentation.
+        - Update Makefile.PL.
+
 0.003   2014-03-20
         - Bugfix in term_size.
         - Update documentation.

@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.003';
+our $VERSION = '0.004';
 use Exporter 'import';
 our @EXPORT_OK = qw( choose_a_directory choose_a_number choose_a_subset choose_multi insert_sep
                      length_longest print_hash term_size unicode_sprintf unicode_trim util_readline );
@@ -20,7 +20,7 @@ use Term::ReadKey qw( GetTerminalSize ReadKey ReadMode );
 use Text::LineFold;
 use Unicode::GCString;
 
-use if $^O eq 'MSWin32', 'Win32::Console'; # => qw( STD_OUTPUT_HANDLE STD_ERROR_HANDLE );
+use if $^O eq 'MSWin32', 'Win32::Console';
 use if $^O eq 'MSWin32', 'Win32::Console::ANSI';
 
 END { ReadMode 0 }
@@ -41,6 +41,7 @@ sub choose_a_directory {
     my $mouse       = $opt->{mouse}        // 0;
     my $layout      = $opt->{layout}       // 3;
     my $order       = $opt->{order}        // 1;
+    my $justify     = $opt->{justify}      // 0;
     #------------------------------------------#
     my $confirm     = $opt->{confirm}      // '- OK -';
     my $up          = $opt->{up}           // '- Up -';
@@ -68,7 +69,7 @@ sub choose_a_directory {
         $prompt   .= '    New dir: "' . decode( 'locale_fs', $dir  ) . '"' . "\n\n";
         my $choice = choose(
             [ undef, $confirm, $up, sort( @dirs ) ],
-            { prompt => $prompt, undef => $back, default => 0, mouse => $mouse,
+            { prompt => $prompt, undef => $back, default => 0, mouse => $mouse, justify => $justify,
               layout => $layout, order => $order, clear_screen => $clear }
         );
         return if ! defined $choice;
@@ -182,11 +183,11 @@ sub choose_a_subset {
     my $mouse   = $opt->{mouse}        // 0;
     my $layout  = $opt->{layout}       // 3;
     my $order   = $opt->{order}        // 1;
-    #--------------------------------------#
-    #my $justify
     my $prefix  = $opt->{prefix}       // ( $layout == 3 ? '- ' : '' );
-    my $confirm = $opt->{confirm} // 'CONFIRM';
-    my $back    = $opt->{back}    // 'BACK';
+    my $justify = $opt->{justify}      // 0;
+    #--------------------------------------#
+    my $confirm = $opt->{confirm}      // 'CONFIRM';
+    my $back    = $opt->{back}         // 'BACK';
     if ( $prefix ) {
         my $gcs_prefix = Unicode::GCString->new( $prefix );
         my $len_prefix = $gcs_prefix->columns();
@@ -209,7 +210,7 @@ sub choose_a_subset {
         # Choose
         my @choice = choose(
             [ @pre, map( $prefix . $_, @$available ) ],
-            { prompt => $prompt, layout => $layout, mouse => $mouse, clear_screen => $clear, justify => 0,
+            { prompt => $prompt, layout => $layout, mouse => $mouse, clear_screen => $clear, justify => $justify,
               lf => [ 0, $len_key ], order => $order, no_spacebar => [ 0 .. $#pre ], undef => $back }
         );
         if ( ! @choice || ! defined $choice[0] ) {
@@ -299,7 +300,8 @@ sub insert_sep {
     my ( $number, $separator ) = @_;
     return if ! defined $number;
     $separator //= ',';
-    $number =~ s/(\d)(?=(?:\d{3})+\b)/$1$separator/g;
+    return $number if $number =~ /\Q$separator\E/;
+    $number =~ s/(^[-+]?\d+?(?=(?>(?:\d{3})+)(?!\d))|\G\d{3}(?=\d))/$1$separator/g;
     return $number;
 }
 
@@ -336,7 +338,8 @@ sub print_hash {
     }
     $len_key += $left_margin;
     my $sep = ' : ';
-    my $len_sep = length( $sep );
+    my $gcs = Unicode::GCString->new( $sep );
+    my $len_sep = $gcs->columns();
     if ( $len_key + $len_sep > int( $maxcols / 3 * 2 ) ) {
         $len_key = int( $maxcols / 3 * 2 ) - $len_sep;
     }
@@ -362,14 +365,12 @@ sub print_hash {
 
 
 sub term_size {
-    #my ( $handle_out ) = shift // 1;
+    my ( $handle_out ) = shift // \*STDOUT;
     if ( $^O eq 'MSWin32' ) {
-        #my $console = Win32::Console->new();
-        #$console->Select( STD_OUTPUT_HANDLE );
-        my ( $width, $heigth ) = Win32::Console->new()->Size();
-        return $width - 1, $heigth;
+        my ( $width, $height ) = Win32::Console->new()->Size();
+        return $width - 1, $height;
     }
-    return( ( GetTerminalSize() )[ 0, 1 ] );
+    return( ( GetTerminalSize( $handle_out ) )[ 0, 1 ] );
 }
 
 
@@ -482,7 +483,7 @@ Term::Choose::Util - CLI related functions.
 
 =head1 VERSION
 
-Version 0.003
+Version 0.004
 
 =cut
 
@@ -492,8 +493,6 @@ See L</SUBROUTINES>.
 
 =head1 DESCRIPTION
 
-This module is experimental.
-
 This module provides some CLI related functions required by L<App::DBBrowser>, L<Term::TablePrint> and L<App::YTDL>.
 
 =head1 EXPORT
@@ -502,13 +501,11 @@ Nothing by default.
 
 =head1 SUBROUTINES
 
-Ensure the encoding layer for STDOUT, STDERR and STDIN are set to the correct value.
-
 Values in brackets are default values.
 
 Unknown option names are ignored.
 
-To get informations about the different I<mouse> modes see I<mouse> at L<Term::Choose/OPTIONS>.
+To get information about the different I<mouse> modes see option I<mouse> in L<Term::Choose>.
 
 =head2 choose_a_directory
 
@@ -535,7 +532,7 @@ Values: 0,[1].
 
 layout
 
-See I<layout> at L<Term::Choose/OPTIONS>
+See the option I<layout> in L<Term::Choose>
 
 Values: 0,[1],2,3.
 
@@ -548,6 +545,14 @@ If set to 1 the items are ordered vertically else they are ordered horizontally.
 This option has no meaning if I<layout> is set to 3.
 
 Values: 0,[1].
+
+=item
+
+justify
+
+Elements in columns are left justified if set to 0, right justified if set to 1 and centered if set to 2.
+
+Values: [0],1,2.
 
 =item
 
@@ -648,7 +653,7 @@ The subset is returned as an array reference.
 
 layout
 
-See I<layout> at L<Term::Choose/OPTIONS>.
+See the option I<layout> in L<Term::Choose>.
 
 Values: 0,1,2,[3].
 
@@ -661,6 +666,23 @@ If set to 1 the items are ordered vertically else they are ordered horizontally.
 This option has no meaning if I<layout> is set to 3.
 
 Values: 0,[1].
+
+=item
+
+justify
+
+Elements in columns are left justified if set to 0, right justified if set to 1 and centered if set to 2.
+
+Values: [0],1,2.
+
+=item
+
+prefix
+
+I<prefix> expects as its value a string. This string is put in front of the elements of the available list before
+printing. The chosen elements are returned without this I<prefix>.
+
+The default value is "- " if the I<layout> is 3 else the default is the empty string ("").
 
 =item
 
@@ -703,7 +725,7 @@ the prompt string
 
 =item
 
-an array reference with the possible values related to the key/option.
+an array reference with the available values of the key/option.
 
 =back
 
@@ -741,7 +763,7 @@ The optional third argument is a reference to a hash. The keys are
 
 in_place
 
-If enabled the configuration hash (passed as second argument) is edited in place.
+If enabled the configuration hash (second argument) is edited in place.
 
 Values: 0,[1].
 
@@ -774,21 +796,18 @@ that modified copy is then returned.
 
 =head2 insert_sep
 
-    $integer = insert_sep( $integer, $separator );
+    $integer = insert_sep( $number, $separator );
 
-Inserts a thousands separator.
+C<insert_sep> inserts thousands separators into the number and returns the number.
 
-The following substitution is applied to the integer passed with the first argument:
+If the first argument is not defined it is returned nothing.
 
-    $integer =~ s/(\d)(?=(?:\d{3})+\b)/$1$separator/g;
+If the first argument contains one or more characters equal to the thousands separator C<insert_sep> returns the string
+unchanged.
 
-After the substitution the number is returned.
+As a second argument it can be passed a character which will be used as the thousands separator.
 
-If the first argument is not defined it is returned nothing immediately.
-
-A thousands separator can be passed with a second argument.
-
-The thousands separator defaults to a comma (C<,>).
+The thousands separator defaults to the comma (C<,>).
 
 =head2 length_longest
 
@@ -799,7 +818,7 @@ C<length_longest> expects as its argument a list of decoded strings passed a an 
     ( $longest, $length ) = length_longest( \@elements );
 
 
-In scalar context C<length_longest> returns the length of the longest string - in list context it return a list where the
+In scalar context C<length_longest> returns the length of the longest string - in list context it returns a list where
 the first item is the length of the longest string and the second is a reference to an array where the elements are the
 length of the corresponding elements from the array (reference) passed as the argument.
 
@@ -809,7 +828,7 @@ I<Length> means here number of print columns as returned by the C<columns> metho
 
 Prints a simple hash to STDOUT (or STDERR if the output is redirected). Nested hashes are not supported. If the hash
 has more keys than the terminal rows the output is divided up on several pages. The user can scroll through the single
-lines of the hash. The output of the hash is closed, when the user presses C<Return>.
+lines of the hash. The output of the hash is closed when the user presses C<Return>.
 
 The first argument is the hash to be printed passed as a reference.
 
@@ -830,10 +849,10 @@ are ignored. If not set I<keys> defaults to
 
 len_key
 
-The value sets the available print width for the keys. The default value is the length (of print columns) of the
+I<len_key> sets the available print width for the keys. The default value is the length (of print columns) of the
 longest key.
 
-If the available width for the values is less than one third of the total available width the keys are trimmed until the
+If the remaining width for the values is less than one third of the total available width the keys are trimmed until the
 available width for the values is at least one third of the total available width.
 
 =item
@@ -941,6 +960,10 @@ It is not required to C<chomp> the returned string.
 =head2 Perl version
 
 Requires Perl version 5.10.1 or greater.
+
+=head2 Encoding layer
+
+Ensure the encoding layer for STDOUT, STDERR and STDIN are set to the correct value.
 
 =head1 SUPPORT
 

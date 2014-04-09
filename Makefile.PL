@@ -17,6 +17,16 @@ WriteMakefile(
     PL_FILES         => {},
     MIN_PERL_VERSION => '5.010001',
     LICENSE          => 'perl',
+    META_MERGE => {
+        'meta-spec' => { version => 2 },
+        resources   => {
+            repository => {
+              type => 'git',
+              web  => 'https://github.com/kuerbis/Term-Choose-Util',
+              url  => 'https://github.com/kuerbis/Term-Choose-Util',
+            },
+        },
+    },
     AUTHOR           => 'Matthaeus Kiem <cuer2s@gmail.com>',
     NAME             => 'Term::Choose::Util',
     VERSION_FROM     => 'lib/Term/Choose/Util.pm',
@@ -38,6 +48,11 @@ WriteMakefile(
         'Text::LineFold'        => 0,
         'Unicode::GCString'     => 0,
         %prereqs_os_specific,
+    },
+    dist  => {
+        COMPRESS => 'gzip',
+        SUFFIX   => '.gz',
+        TARFLAGS => '--format=gnu -cvf',
     },
     clean => {
         FILES => 'Term-Choose-Util-*',

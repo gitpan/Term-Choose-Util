@@ -4,7 +4,7 @@
       "Matthaeus Kiem <cuer2s@gmail.com>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.88, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.94, CPAN::Meta::Converter version 2.140640",
    "license" : [
       "perl_5"
    ],
@@ -49,5 +49,12 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.003"
+   "resources" : {
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/kuerbis/Term-Choose-Util",
+         "web" : "https://github.com/kuerbis/Term-Choose-Util"
+      }
+   },
+   "version" : "0.004"
 }
