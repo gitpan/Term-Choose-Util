@@ -39,7 +39,7 @@
             "File::HomeDir" : "0",
             "File::Spec::Functions" : "0",
             "List::Util" : "0",
-            "Term::Choose" : "1.116",
+            "Term::Choose" : "1.117",
             "Term::ReadKey" : "0",
             "Text::LineFold" : "0",
             "Unicode::GCString" : "0",
@@ -57,5 +57,5 @@
          "web" : "https://github.com/kuerbis/Term-Choose-Util"
       }
    },
-   "version" : "0.017"
+   "version" : "0.018"
 }
